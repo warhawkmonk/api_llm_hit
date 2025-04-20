@@ -6,3 +6,4 @@ pillow
 numpy
 langchain-ollama
 python-dotenv
+transformers
