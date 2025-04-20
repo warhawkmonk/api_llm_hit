@@ -1,0 +1,8 @@
+# requirements.txt
+flask>=2.0.1
+diffusers
+torch
+pillow
+numpy
+langchain-ollama
+python-dotenv
