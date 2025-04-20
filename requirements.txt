@@ -7,3 +7,4 @@ numpy
 langchain-ollama
 python-dotenv
 transformers
+accelerate
