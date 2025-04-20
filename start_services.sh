@@ -9,7 +9,6 @@ sleep 5
 
 # Pull required models
 ollama pull llama3:latest
-ollama pull steamdj/llama3.1-cpu-only
 
 # Start Flask application
 python app.py
