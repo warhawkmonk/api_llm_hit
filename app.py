@@ -13,14 +13,14 @@ app = Flask(__name__)
 # Load model at startup
 def load_model():
     return AutoPipelineForInpainting.from_pretrained(
-        "gubli/",
+        "nitrosocke/Ghibli-Diffusion",
         torch_dtype=torch.float16
     ).to("cuda")
 
 pipeline_ = load_model()
 
 def llm_text_response():
-    llm = OllamaLLM(model="steamdj/llama3.1-cpu-only",num_thread=14)
+    llm = OllamaLLM(model="llama3:latest",num_thread=14)
     return llm.stream
 def llm_text_response_invoke():
     llm = OllamaLLM(model="llama3:latest",num_thread=14)
