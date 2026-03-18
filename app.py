@@ -26,12 +26,12 @@ def load_model():
 
 # pipeline_ = load_model()
 # pipeline_.enable_model_cpu_offload()
-def llm_text_response():
-    llm = OllamaLLM(model="steamdj/llama3.1-cpu-only:latest")
-    return llm.stream
-def llm_text_response_invoke():
-    llm = OllamaLLM(model="steamdj/llama3.1-cpu-only:latest")
-    return llm.invoke
+# def llm_text_response():
+#     llm = OllamaLLM(model="steamdj/llama3.1-cpu-only:latest")
+#     return llm.stream
+# def llm_text_response_invoke():
+#     llm = OllamaLLM(model="steamdj/llama3.1-cpu-only:latest")
+#     return llm.invoke
 
 
 # Use a small Qwen model (CPU‑friendly)
