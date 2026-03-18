@@ -8,3 +8,5 @@ langchain-ollama
 python-dotenv
 transformers
 accelerate
+sentence_transformers
+pinecone
