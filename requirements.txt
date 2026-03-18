@@ -1,5 +1,6 @@
 # requirements.txt
 flask>=2.0.1
+gunicorn>=20.1.0
 diffusers
 torch
 pillow

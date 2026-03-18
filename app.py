@@ -14,6 +14,11 @@ from langchain_ollama import OllamaLLM
 model = SentenceTransformer("all-mpnet-base-v2")
 app = Flask(__name__)
 
+# Health check endpoint
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "ok"}), 200
+
 # Load model at startup
 def load_model():
     # import gc
@@ -186,4 +191,7 @@ def normal_response():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True,port=6000)
+    import os
+    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    port = int(os.getenv('PORT', 6000))
+    app.run(debug=debug, port=port, host='0.0.0.0')

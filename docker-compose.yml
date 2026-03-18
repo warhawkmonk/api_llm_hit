@@ -1,20 +1,19 @@
-# # docker-compose.yml
-# version: '3.8'
+version: '3.8'
 
-# services:
-#   api:
-#     build: .
-#     ports:
-#       - "5000:5000"
-#       - "11434:11434"
-#     deploy:
-#       resources:
-#         reservations:
-#           devices:
-#             - driver: nvidia
-#               count: 1
-#               capabilities: [gpu]
-#     environment:
-#       - FLASK_DEBUG=0
-#       - LC_ALL=C.UTF-8
-#       - LANG=C.UTF-8
+services:
+  api:
+    build: .
+    container_name: api-llm-service
+    ports:
+      - "6000:6000"
+    environment:
+      - FLASK_DEBUG=0
+      - LC_ALL=C.UTF-8
+      - LANG=C.UTF-8
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
