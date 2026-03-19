@@ -29,14 +29,9 @@ def load_model():
         torch_dtype=torch.float16
     ).to("cuda")
 
-# pipeline_ = load_model()
-# pipeline_.enable_model_cpu_offload()
-def llm_text_response():
-    llm = OllamaLLM(model="steamdj/llama3.1-cpu-only:latest")
-    return llm.stream
-def llm_text_response_invoke():
-    llm = OllamaLLM(model="steamdj/llama3.1-cpu-only:latest")
-    return llm.invoke
+pipeline_ = load_model()
+pipeline_.enable_model_cpu_offload()
+
 
 
 # Use a small Qwen model (CPU‑friendly)
@@ -45,7 +40,7 @@ HF_MODEL_NAME = "Qwen/Qwen2-0.5B-Instruct"  # or "Qwen/Qwen3.5-0.8B"
 _TEXT_GENERATOR = pipeline(
     "text-generation",
     model=HF_MODEL_NAME,
-    device_map="cpu",
+    device_map="cuda",
     return_full_text=False,
     padding=True,
     truncation=True,
