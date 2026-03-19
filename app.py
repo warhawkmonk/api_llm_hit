@@ -30,7 +30,7 @@ def load_model():
     ).to("cpu")
 
 pipeline_ = load_model()
-pipeline_.enable_model_cpu_offload()
+# pipeline_.enable_model_cpu_offload()
 
 
 
