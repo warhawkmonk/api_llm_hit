@@ -26,8 +26,8 @@ def load_model():
     # torch.cuda.empty_cache()
     return AutoPipelineForInpainting.from_pretrained(
         "kandinsky-community/kandinsky-2-2-decoder-inpaint",
-        torch_dtype=torch.float16
-    ).to("cuda")
+        torch_dtype=torch.float16,token="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"
+    ).to("cpu")
 
 pipeline_ = load_model()
 pipeline_.enable_model_cpu_offload()
@@ -40,10 +40,11 @@ HF_MODEL_NAME = "Qwen/Qwen2-0.5B-Instruct"  # or "Qwen/Qwen3.5-0.8B"
 _TEXT_GENERATOR = pipeline(
     "text-generation",
     model=HF_MODEL_NAME,
-    device_map="cuda",
+    device_map="cpu",
     return_full_text=False,
     padding=True,
     truncation=True,
+    token="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"
 )
 
 
