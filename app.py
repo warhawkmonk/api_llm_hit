@@ -3,15 +3,12 @@ torch.cuda.empty_cache()
 from diffusers import AutoPipelineForInpainting
 from flask import Flask, jsonify, request,Response
 from PIL import Image
-import base64
-import io
-from PIL import Image
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from pinecone import Pinecone, ServerlessSpec
+# from sentence_transformers import SentenceTransformer
+# from pinecone import Pinecone, ServerlessSpec
 from transformers import pipeline
 from langchain_ollama import OllamaLLM
-model = SentenceTransformer("all-mpnet-base-v2")
+# model = SentenceTransformer("all-mpnet-base-v2")
 app = Flask(__name__)
 
 # Health check endpoint
@@ -21,13 +18,10 @@ def health_check():
 
 # Load model at startup
 def load_model():
-    # import gc
-    # gc.collect()
-    # torch.cuda.empty_cache()
     return AutoPipelineForInpainting.from_pretrained(
         "kandinsky-community/kandinsky-2-2-decoder-inpaint",
-        torch_dtype=torch.float16,token="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"
-    ).to("cpu")
+        torch_dtype=torch.float16,token="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"
+    ).to("cuda")
 
 pipeline_ = load_model()
 # pipeline_.enable_model_cpu_offload()
@@ -44,7 +38,7 @@ _TEXT_GENERATOR = pipeline(
     return_full_text=False,
     padding=True,
     truncation=True,
-    token="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"
+    token="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"
 )
 
 
@@ -110,28 +104,15 @@ def normal_response():
             negative_prompt = data.get("negative_prompt", "")
             
             init_image = Image.fromarray(np.array(initial_img_base64,dtype=np.uint8))
-            # mask_image = Image.fromarray(np.array(masked_img_base64,dtype=np.uint8))
+
             mask_image = np.array(masked_img_base64,dtype=np.uint8)
-            # init_image = base64_to_image(initial_img_base64)
-            # mask_image = base64_to_image(masked_img_base64)
-    
-            # Generate inpainted image
             output_image = model_out_put(init_image=init_image, mask_image=mask_image, prompt=prompt, negative_prompt=negative_prompt)
-            # prompt=prompt, negative_prompt=negative_prompt, image=init_image, mask_image=mask_image
+
             output_image = numpy_to_list(np.array(output_image,dtype=np.uint8))
-            # Convert output image to base64 for response
-                
-            
             return jsonify({"img": output_image})
         elif "only_prompt" in data:
-            print("hi",data["only_prompt"])
             output_image = pipeline_(data["only_prompt"]).images[0]
-            print("working")
-            # prompt=prompt, negative_prompt=negative_prompt, image=init_image, mask_image=mask_image
             output_image = numpy_to_list(np.array(output_image,dtype=np.uint8))
-            # Convert output image to base64 for response
-                
-            
             return jsonify({"img": output_image})
         elif "extension" in data:
             prompt = data.get("prompt", "")
@@ -140,31 +121,7 @@ def normal_response():
                 return jsonify({"error": "Prompt is required"}), 400
             llm_stream = llm_text_response_invoke()(prompt)
             return jsonify({"text": llm_stream})
-        elif "api_key" in data:
-            api_key = data.get("api_key", "")
-            pc = Pinecone(api_key=api_key)
-            index_name = "quickstart"
-            index = pc.Index(index_name)
-
-            value = index.query (
-                id="lorum",
-                top_k=1,
-                include_metadata=True
-                )
-            
-            value = value['matches'][0]['metadata']['string']
-            output = llm_text_response_invoke()(value)
-            index.upsert(
-                vectors=[
-                    {
-                        "id": value[:512], 
-                        "values": [float(i) for i in list(model.encode(value))],  
-                        "metadata": {"string":str(output),"prompt":value}
-                        
-                    }
-                ]
-            )
-            return {"status":True}            
+         
         else:
             prompt = data.get("prompt", "")
             if not prompt:
@@ -182,8 +139,10 @@ def normal_response():
     
             return Response(generate(), content_type='text/event-stream')            
     except ValueError as ve:
+        print("ValueError:", ve)
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
+        print("ValueError:", e)
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
