@@ -20,7 +20,7 @@ def health_check():
 def load_model():
     return AutoPipelineForInpainting.from_pretrained(
         "kandinsky-community/kandinsky-2-2-decoder-inpaint",
-        torch_dtype=torch.float16,token="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"
+        torch_dtype=torch.float16,token="ADD your Hugging Face token here"
     ).to("cuda")
 
 pipeline_ = load_model()
@@ -38,7 +38,7 @@ _TEXT_GENERATOR = pipeline(
     return_full_text=False,
     padding=True,
     truncation=True,
-    token="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"
+    token="ADD your Hugging Face token here"
 )
 
 
