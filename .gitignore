@@ -1,2 +1,4 @@
 venv
-experiment.ipynb
+exp.ipynb
+test.py
+__pycache__/
