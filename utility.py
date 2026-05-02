@@ -1,15 +1,17 @@
-from langchain_community.llms import Ollama  # Keep for reference, but switch below
-from langchain_ollama import ChatOllama  # Install: pip install langchain-ollama
+from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage  # For input format
 
 import wikipedia
 import wikipediaapi
-import regex as re
-from sentence_transformers import SentenceTransformer,util
+# import regex as re
+from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
 import requests
+
+# Initialize the QA model for question-answering tasks
+# qa_model = pipeline("question-answering", model="deepset/roberta-base-squad2")
 
 
 @tool
@@ -29,7 +31,7 @@ def consume_llm_api(prompt):
     """
     url = "http://127.0.0.1:6000/api/llm-response"
     headers = {"Content-Type": "application/json"}
-    payload = {"prompt": prompt}
+    payload = {"prompt": prompt,"extension":True}
 
     import requests
     print("Sending prompt to the LLM API...")
@@ -40,7 +42,7 @@ def consume_llm_api(prompt):
 @tool
 def relevent_value(long_query, count=3):
     """
-    Retrieves summary text and HTML content for the top Wikipedia search results.
+    Retrieves summary text and HTML content for the top Wikipedia search results. Use only when information is mandatory to confirm.
 
     Args:
         long_query (str): The search query to look up on Wikipedia.
@@ -162,19 +164,19 @@ def actual_value(textual_value, schema):
         formatted_result += "The length of each list of each key must be same in the generated data(mandatory)."+"\n"
         raw_output = consume_llm_api(formatted_result)
         try:
-            data=construction_edit(raw_output,schema)
+            data = construction_edit(raw_output, schema)
             json_object_match = re.search(r'\{(?:[^{}]|(?R))*\}', data)
-            access_value=eval(json_object_match.group())
+            access_value = eval(json_object_match.group())
             for schema_key in schema:
                 if schema_key not in access_value:
-                    access_value[schema_key]=list(set())
+                    access_value[schema_key] = list(set())
             for schema_key in access_value:
-                access_value[schema_key]=list(set(access_value[schema_key]))
-                access_value[schema_key]=list(set(access_value[schema_key])-set(["Na"]))
+                access_value[schema_key] = list(set(access_value[schema_key]))
+                access_value[schema_key] = list(set(access_value[schema_key]) - set(["Na"]))
             yield access_value
-            
-        except:
-            access_value=None
+        except Exception as e:
+            print(f"Error processing output: {e}")
+            access_value = None
         
 
 
@@ -406,7 +408,7 @@ def agent_data_prep(value, query):
         dict: The completed and fully aligned data dictionary.
 
     Note:
-        Uses Ollama LLM to generate intelligent commands for data extraction and appending.
+        Uses OpenAI LLM to generate intelligent commands for data extraction and appending.
         Implements a reward system (virtual $1000 per correct append) and penalty system.
         Continues iterating until all dictionary keys have values of equal length.
     """
@@ -466,8 +468,14 @@ def agent_data_prep(value, query):
 
         # instructionto give commands to the agent
 
-        judgement = Ollama(model = "llama3:latest")
-        command = judgement.invoke(agent_instruction)
+        llm = ChatOpenAI(
+            model="google/gemma-4-e4b",
+            base_url="http://localhost:1234/v1",
+            api_key="lm-studio",
+            temperature=0.7
+        )
+        response = llm.invoke(agent_instruction)
+        command = response.content
         
         end_result = agent_work_result(command,value)
         if "Now you can fill the remaining columns" in end_result:
@@ -660,7 +668,7 @@ def user_query_understading(user_query, schema, data):
 @tool
 def fast_data_generation(query):
     """
-    Quickly generates data based on a query/schema without additional steps.
+    Quickly generates data based on a query/schema without additional steps. Only to be used when user is sure about the data and just want to generate it without any validation or checking.
 
     Args:
         query (str): The query or schema to generate data for.

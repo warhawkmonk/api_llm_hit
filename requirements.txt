@@ -6,9 +6,14 @@ diffusers
 torch
 pillow
 numpy
-langchain-ollama
+langchain-openai
 python-dotenv
 transformers
-accelerate
 sentence_transformers
 pinecone
+regex
+wikipedia
+wikipediaapi
+langgraph
+langchain-community
+langchain-core

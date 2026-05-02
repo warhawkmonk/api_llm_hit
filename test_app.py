@@ -1,6 +1,5 @@
 import torch
-from langchain_community.llms import Ollama  # Keep for reference, but switch below
-from langchain_ollama import ChatOllama  # Install: pip install langchain-ollama
+from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from langchain_core.messages import HumanMessage  # For input format
@@ -20,7 +19,6 @@ from flask import Flask, jsonify, request,Response
 from PIL import Image
 import numpy as np
 from transformers import pipeline
-from langchain_ollama import OllamaLLM
 app = Flask(__name__)
 
 # Health check endpoint
@@ -49,8 +47,13 @@ tools = [
     fast_data_generation, fast_gen_error_remover, rows_limit, query_template
 ]
 
-# Initialize agent with Ollama
-llm = ChatOllama(model="qwen3:8b",num_gpu=9999)
+# Initialize agent with OpenAI
+llm = ChatOpenAI(
+    model="google/gemma-4-e4b",
+    base_url="http://localhost:1234/v1",
+    api_key="lm-studio",
+    temperature=0.7
+)
 agent = create_react_agent(llm, tools)
 
 
@@ -96,18 +99,23 @@ def normal_response():
 
             output_image = numpy_to_list(np.array(output_image,dtype=np.uint8))
             return jsonify({"img": output_image})
+        
+        
         elif "only_prompt" in data:
             output_image = pipeline_(data["only_prompt"]).images[0]
             output_image = numpy_to_list(np.array(output_image,dtype=np.uint8))
             return jsonify({"img": output_image})
+        
+
+
         elif "extension" in data:
             prompt = data.get("prompt", "")
    
             if not prompt:
                 return jsonify({"error": "Prompt is required"}), 400
             # Use agent instead of text generator
-            response = agent.invoke({"messages": [HumanMessage(content=prompt)]})
-            agent_response = response["messages"][-1].content
+            response = llm.invoke(prompt)
+            agent_response = response.content
             return jsonify({"text": agent_response})
          
         else:

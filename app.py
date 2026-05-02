@@ -1,14 +1,11 @@
+import os
 import torch
 torch.cuda.empty_cache()
 from diffusers import AutoPipelineForInpainting
-from flask import Flask, jsonify, request,Response
+from flask import Flask, jsonify, request, Response
 from PIL import Image
 import numpy as np
-# from sentence_transformers import SentenceTransformer
-# from pinecone import Pinecone, ServerlessSpec
 from transformers import pipeline
-from langchain_ollama import OllamaLLM
-# model = SentenceTransformer("all-mpnet-base-v2")
 app = Flask(__name__)
 
 # Health check endpoint
@@ -92,12 +89,9 @@ def model_out_put(init_image, mask_image, prompt, negative_prompt):
 @app.route('/api/llm-response', methods=['POST'])
 def normal_response():
     try:
-        
         # Parse request JSON
         data = request.get_json()
         if "initial_img" in data:
-            
-            data = request.get_json()
             prompt = data.get("prompt", "")
             initial_img_base64 = data.get("initial_img", "")
             masked_img_base64 = data.get("masked_img", "")
@@ -139,10 +133,10 @@ def normal_response():
     
             return Response(generate(), content_type='text/event-stream')            
     except ValueError as ve:
-        print("ValueError:", ve)
+        print(f"ValueError: {ve}")
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
-        print("ValueError:", e)
+        print(f"Error: {type(e).__name__}: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':

@@ -161,7 +161,7 @@ Queries the Pinecone "quickstart" index and generates LLM responses based on vec
 - `torch` - Deep learning framework
 - `diffusers` - Image generation models
 - `transformers` - NLP models
-- `langchain-ollama` - LLM integration
+- `openai` - OpenAI API integration
 - `sentence-transformers` - Semantic embeddings
 - `pinecone` - Vector database
 - `pillow` - Image processing
