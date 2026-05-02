@@ -1,8 +1,16 @@
-import os
 import torch
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import HumanMessage  # For input format
+import wikipedia
+import wikipediaapi
+from utility import (
+    consume_llm_api, relevent_value,query_generator, query_template,image_generation
+)
 torch.cuda.empty_cache()
 from diffusers import AutoPipelineForInpainting
-from flask import Flask, jsonify, request, Response
+from flask import Flask, jsonify, request,Response
 from PIL import Image
 import numpy as np
 from transformers import pipeline
@@ -19,50 +27,26 @@ def load_model():
         "kandinsky-community/kandinsky-2-2-decoder-inpaint",
         torch_dtype=torch.float16,token="ADD your Hugging Face token here"
     ).to("cuda")
+    return {}
 
 pipeline_ = load_model()
 # pipeline_.enable_model_cpu_offload()
 
+# Initialize tools list with actual tool functions from utility
+tools = [
+    consume_llm_api, relevent_value, query_generator, query_template,image_generation
+]
 
-
-# Use a small Qwen model (CPU‑friendly)
-HF_MODEL_NAME = "Qwen/Qwen2-0.5B-Instruct"  # or "Qwen/Qwen3.5-0.8B"
-
-_TEXT_GENERATOR = pipeline(
-    "text-generation",
-    model=HF_MODEL_NAME,
-    device_map="cpu",
-    return_full_text=False,
-    padding=True,
-    truncation=True,
-    token="ADD your Hugging Face token here"
+# Initialize agent with OpenAI
+llm = ChatOpenAI(
+    model="google/gemma-4-e4b",
+    base_url="http://localhost:1234/v1",
+    api_key="lm-studio",
+    temperature=0.7
 )
+agent = create_react_agent(llm, tools)
 
 
-def llm_text_response():
-    """Return a generator that mimics .stream()."""
-    def stream_fn(prompt: str, **kwargs):
-        gen = _TEXT_GENERATOR(
-            prompt,
-            max_new_tokens=kwargs.pop("max_tokens", 256),
-            **kwargs
-        )
-        yield gen[0]["generated_text"]
-
-    return stream_fn
-
-
-def llm_text_response_invoke():
-    """Return an invoke‑style callable."""
-    def invoke_fn(prompt: str, **kwargs):
-        gen = _TEXT_GENERATOR(
-            prompt,
-            max_new_tokens=kwargs.pop("max_tokens", 256),
-            **kwargs
-        )
-        return gen[0]["generated_text"]
-
-    return invoke_fn
 def numpy_to_list(array):
 
     current=[]
@@ -76,8 +60,6 @@ def numpy_to_list(array):
     return current
 
 def model_out_put(init_image, mask_image, prompt, negative_prompt):
-    # Run the inpainting pipeline
-    # pipeline_ = load_model()
     image = pipeline_(
         prompt=prompt, 
         negative_prompt=negative_prompt, 
@@ -89,9 +71,12 @@ def model_out_put(init_image, mask_image, prompt, negative_prompt):
 @app.route('/api/llm-response', methods=['POST'])
 def normal_response():
     try:
+        
         # Parse request JSON
         data = request.get_json()
         if "initial_img" in data:
+            
+            data = request.get_json()
             prompt = data.get("prompt", "")
             initial_img_base64 = data.get("initial_img", "")
             masked_img_base64 = data.get("masked_img", "")
@@ -104,39 +89,41 @@ def normal_response():
 
             output_image = numpy_to_list(np.array(output_image,dtype=np.uint8))
             return jsonify({"img": output_image})
+        
+
         elif "only_prompt" in data:
             output_image = pipeline_(data["only_prompt"]).images[0]
             output_image = numpy_to_list(np.array(output_image,dtype=np.uint8))
             return jsonify({"img": output_image})
+        
+
+
         elif "extension" in data:
             prompt = data.get("prompt", "")
    
             if not prompt:
                 return jsonify({"error": "Prompt is required"}), 400
-            llm_stream = llm_text_response_invoke()(prompt)
-            return jsonify({"text": llm_stream})
+            # Use agent instead of text generator
+            response = llm.invoke(prompt)
+            agent_response = response.content
+            return jsonify({"text": agent_response})
          
         else:
             prompt = data.get("prompt", "")
             if not prompt:
                 return jsonify({"error": "Prompt is required"}), 400
     
-            # Call the LLM response generator with the prompt
-            llm_stream = llm_text_response()(prompt)
-    
-            # Create a generator to stream the data
-        
-            def generate():
-                for chunk in llm_stream:
-                    
-                    yield chunk
-    
-            return Response(generate(), content_type='text/event-stream')            
+            # Use agent to process the prompt
+            response = agent.invoke({"messages": [HumanMessage(content=prompt)]})
+            agent_response = response["messages"][-1].content
+            
+            # Return agent response
+            return jsonify({"text": agent_response})            
     except ValueError as ve:
-        print(f"ValueError: {ve}")
+        print("ValueError:", ve)
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
-        print(f"Error: {type(e).__name__}: {e}")
+        print("Error:", e)
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
