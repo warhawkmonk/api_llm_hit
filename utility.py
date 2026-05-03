@@ -10,8 +10,6 @@ from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
 import requests
 
-# Initialize the QA model for question-answering tasks
-# qa_model = pipeline("question-answering", model="deepset/roberta-base-squad2")
 
 
 @tool
@@ -112,6 +110,7 @@ def query_template(query):
     result = consume_llm_api(template)
     return result
 
+@tool
 def image_generation(prompt):
     """Generate an image prompt response from a local LLM endpoint.
 
